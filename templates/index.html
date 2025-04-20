@@ -1,83 +1,161 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <title>五子棋 - 人类 vs AI</title>
-    <style>
-        body { text-align: center; font-family: Arial; }
-        #board { display: grid; margin: 20px auto; }
-        .cell {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #555;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>五子棋 - 人类 vs AI</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    #board {
+      display: inline-grid;
+      grid-gap: 0;
+      background: #dba55d;
+      border: 2px solid #333;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .cell {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #555;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .cell::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .cell:has(.black)::before {
+      background-color: black;
+    }
+
+    .cell:has(.white)::before {
+      background-color: white;
+      border: 1px solid #ccc;
+    }
+
+    #status {
+      margin: 20px 0;
+      font-weight: bold;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background: #333;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background: #555;
+    }
+  </style>
 </head>
 <body>
-    <h1>人类 vs AI 五子棋</h1>
-    <div id="board"></div>
-    <p id="status"></p>
+  <h1>人类 vs AI 五子棋</h1>
+  <div id="board"></div>
+  <p id="status"></p>
+  <button onclick="resetGame()">重置游戏</button>
 
-    <script>
-        const width = {{ width }};
-        const height = {{ height }};
-        const boardElement = document.getElementById("board");
-        const status = document.getElementById("status");
+  <script>
+    const width = {{ width }};
+    const height = {{ height }};
+    const boardElement = document.getElementById("board");
+    const status = document.getElementById("status");
 
-        boardElement.style.gridTemplateColumns = `repeat(${width}, 40px)`;
+    boardElement.style.gridTemplateColumns = `repeat(${width}, 40px)`;
+    let board = Array(width * height).fill('');
 
-        let board = Array(width * height).fill('');
-
-        function render() {
-            boardElement.innerHTML = '';
-            board.forEach((cell, idx) => {
-                const div = document.createElement('div');
-                div.className = 'cell';
-                div.innerText = cell;
-                div.onclick = () => handleClick(idx);
-                boardElement.appendChild(div);
-            });
+    // 渲染棋盘状态
+    function render() {
+      boardElement.innerHTML = '';
+      board.forEach((cell, idx) => {
+        const div = document.createElement('div');
+        div.className = 'cell';
+        if (cell === '●') {
+          const piece = document.createElement('div');
+          piece.className = 'stone black';
+          div.appendChild(piece);
+        } else if (cell === '○') {
+          const piece = document.createElement('div');
+          piece.className = 'stone white';
+          div.appendChild(piece);
         }
+        div.onclick = () => handleClick(idx);
+        boardElement.appendChild(div);
+      });
+    }
 
-        function handleClick(idx) {
-            if (board[idx] !== '') return;
-            const row = Math.floor(idx / width);
-            const col = idx % width;
+    // 点击单元格处理逻辑
+    function handleClick(idx) {
+      if (board[idx] !== '') return; // 已经有棋子了，不能再落子
+      const row = Math.floor(idx / width);
+      const col = idx % width;
 
-            fetch('/play', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ row, col })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'invalid') {
-                    status.innerText = '无效的落子';
-                } else {
-                    board[idx] = '●';
-                    if (data.status === 'win') {
-                        status.innerText = '你赢了！';
-                        render();
-                        return;
-                    }
-                    const [ai_row, ai_col] = data.ai_move;
-                    board[ai_row * width + ai_col] = '○';
-                    if (data.status === 'lose') {
-                        status.innerText = '你输了！';
-                    } else {
-                        status.innerText = '轮到你了';
-                    }
-                }
-                render();
-            });
+      fetch('/play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ row, col })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'invalid') {
+          status.innerText = '无效的落子';
+        } else {
+          board[idx] = '●'; // 玩家下棋
+          if (data.status === 'win') {
+            status.innerText = '你赢了！';
+            render();
+            return;
+          }
+          const [ai_row, ai_col] = data.ai_move;
+          board[ai_row * width + ai_col] = '○'; // AI 下棋
+          if (data.status === 'lose') {
+            status.innerText = '你输了！';
+          } else {
+            status.innerText = '轮到你了';
+          }
         }
-
         render();
-    </script>
+      });
+    }
+
+    // 重置游戏
+    function resetGame() {
+      fetch('/reset', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          board = Array(width * height).fill('');
+          status.innerText = '游戏已重置，轮到你了';
+          render();
+        }
+      });
+    }
+
+    // 页面初始化时渲染一次棋盘
+    render();
+  </script>
 </body>
 </html>
