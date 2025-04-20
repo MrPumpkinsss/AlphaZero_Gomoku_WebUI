@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>五子棋 - 人类 vs AI</title>
+  <title>Gomoku - Human vs AI</title>
   <style>
     body {
       text-align: center;
@@ -73,10 +73,10 @@
   </style>
 </head>
 <body>
-  <h1>人类 vs AI 五子棋</h1>
+  <h1>Human vs AI Gomoku</h1>
   <div id="board"></div>
   <p id="status"></p>
-  <button onclick="resetGame()">重置游戏</button>
+  <button onclick="resetGame()">Reset Game</button>
 
   <script>
     const width = {{ width }};
@@ -87,7 +87,7 @@
     boardElement.style.gridTemplateColumns = `repeat(${width}, 40px)`;
     let board = Array(width * height).fill('');
 
-    // 渲染棋盘状态
+    // Render the board state
     function render() {
       boardElement.innerHTML = '';
       board.forEach((cell, idx) => {
@@ -107,9 +107,9 @@
       });
     }
 
-    // 点击单元格处理逻辑
+    // Handle the click event
     function handleClick(idx) {
-      if (board[idx] !== '') return; // 已经有棋子了，不能再落子
+      if (board[idx] !== '') return; // Cannot place a piece if there is already one
       const row = Math.floor(idx / width);
       const col = idx % width;
 
@@ -121,40 +121,40 @@
       .then(res => res.json())
       .then(data => {
         if (data.status === 'invalid') {
-          status.innerText = '无效的落子';
+          status.innerText = 'Invalid move';
         } else {
-          board[idx] = '●'; // 玩家下棋
+          board[idx] = '●'; // Player's move
           if (data.status === 'win') {
-            status.innerText = '你赢了！';
+            status.innerText = 'You win!';
             render();
             return;
           }
           const [ai_row, ai_col] = data.ai_move;
-          board[ai_row * width + ai_col] = '○'; // AI 下棋
+          board[ai_row * width + ai_col] = '○'; // AI's move
           if (data.status === 'lose') {
-            status.innerText = '你输了！';
+            status.innerText = 'You lose!';
           } else {
-            status.innerText = '轮到你了';
+            status.innerText = 'Your turn';
           }
         }
         render();
       });
     }
 
-    // 重置游戏
+    // Reset the game
     function resetGame() {
       fetch('/reset', { method: 'POST' })
       .then(res => res.json())
       .then(data => {
         if (data.status === 'ok') {
           board = Array(width * height).fill('');
-          status.innerText = '游戏已重置，轮到你了';
+          status.innerText = 'Game reset, your turn';
           render();
         }
       });
     }
 
-    // 页面初始化时渲染一次棋盘
+    // Render the board on page load
     render();
   </script>
 </body>
